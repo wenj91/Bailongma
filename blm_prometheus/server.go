@@ -20,8 +20,6 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"github.com/taosdata/Bailongma/blm_prometheus/pkg/tdengine"
-	"github.com/taosdata/Bailongma/blm_prometheus/pkg/tdengine/write"
 	"io"
 	"io/ioutil"
 	"log"
@@ -35,12 +33,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/taosdata/Bailongma/blm_prometheus/pkg/tdengine"
+	"github.com/taosdata/Bailongma/blm_prometheus/pkg/tdengine/write"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	logger "github.com/taosdata/Bailongma/blm_prometheus/pkg/log"
-	_ "github.com/taosdata/driver-go/taosSql"
+	_ "github.com/wenj91/taos-driver"
 )
 
 type fieldDescription struct {
@@ -80,7 +81,7 @@ var (
 	IsTableCreated  sync.Map
 	tagStr          string
 	tdUrl           string
-	logNameDefault  string = "/var/log/taos/blm_prometheus.log"
+	logNameDefault  string = "blm_prometheus.log"
 )
 
 var scratchBufPool = &sync.Pool{
@@ -114,13 +115,13 @@ func init() {
 		// look DNS A records
 		s, _ := net.LookupIP(write.DaemonName)
 		write.DaemonIP = fmt.Sprintf("%s", s[0])
-		write.DaemonIP = write.DaemonIP + ":0"
+		write.DaemonIP = write.DaemonIP + ":6041"
 		fmt.Println("daemonIP:" + write.DaemonIP)
 
 		write.TdUrl = write.DaemonName
 	} else {
 		write.TdUrl = write.DaemonIP
-		write.DaemonIP = write.DaemonIP + ":0"
+		write.DaemonIP = write.DaemonIP + ":6041"
 	}
 
 	write.TagStr = fmt.Sprintf(" binary(%d)", write.TagLen)

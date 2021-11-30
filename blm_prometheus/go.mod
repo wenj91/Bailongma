@@ -8,5 +8,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/prometheus/common v0.30.0
 	github.com/prometheus/prometheus v2.5.0+incompatible
-	github.com/taosdata/driver-go v0.0.0-20210722071233-99176d298e90
+	github.com/stretchr/testify v1.7.0 // indirect
+	github.com/wenj91/taos-driver v0.0.0-20211130143321-88902e12231a
 )
