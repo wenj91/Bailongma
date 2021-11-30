@@ -1,6 +1,0 @@
-[INFO] 2021/11/30 22:52:03 server.go:131: host: ip
-[INFO] 2021/11/30 22:52:03 server.go:132: 127.0.0.1:6041
-[INFO] 2021/11/30 22:52:03 server.go:133:   port: 
-[INFO] 2021/11/30 22:52:03 server.go:134: 10203
-[INFO] 2021/11/30 22:52:03 server.go:135:   database: 
-[INFO] 2021/11/30 22:52:03 server.go:136: prometheus
