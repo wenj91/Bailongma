@@ -310,7 +310,7 @@ func checkErr(err error) {
 
 func processBatches(workerId int) {
 	var i int
-	db, err := sql.Open(write.DriverName, write.DbUser+":"+write.DbPassword+"@/tcp("+write.DaemonIP+")/"+write.DbName)
+	db, err := sql.Open(write.DriverName, write.DbUser+":"+write.DbPassword+"@/http("+write.DaemonIP+")/"+write.DbName)
 	if err != nil {
 		logger.ErrorLogger.Printf("processBatches Open database error: %s\n", err)
 		var count int = 5
@@ -329,6 +329,8 @@ func processBatches(workerId int) {
 		}
 	}
 	defer db.Close()
+	db.Exec("use prometheus")
+
 	sqlcmd := make([]string, write.BatchSize+1)
 	i = 0
 	sqlcmd[i] = "Insert into"

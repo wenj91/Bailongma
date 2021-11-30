@@ -47,11 +47,16 @@ func NewProcessor() *WriterProcessor {
 }
 
 func (p *WriterProcessor) Process(req *prompb.WriteRequest) error {
-	db, err := sql.Open(DriverName, DbUser+":"+DbPassword+"@/tcp("+DaemonIP+")/"+DbName)
+
+	url := DbUser+":"+DbPassword+"@/http("+DaemonIP+")/"+DbName
+
+	db, err := sql.Open(DriverName, url)
 	if err != nil {
 		log.ErrorLogger.Printf("Open database error: %s\n", err)
 	}
 	defer db.Close()
+
+	db.Exec("use prometheus")
 
 	for _, ts := range req.Timeseries {
 		err = HandleStable(ts, db)
