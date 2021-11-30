@@ -44,6 +44,8 @@ func (p *ReaderProcessor) Process(req *prompb.ReadRequest) (*prompb.ReadResponse
 		log.ErrorLogger.Printf("Open database error: %s\n", err)
 	}
 	defer db.Close()
+	db.Exec("use prometheus")
+	
 	labelsToSeries := map[string]*prompb.TimeSeries{}
 	for _, q := range req.Queries {
 		metricFilter, condition, labelFilters, err := buildCommand(q)
