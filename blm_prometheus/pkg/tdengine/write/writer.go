@@ -19,15 +19,15 @@ import (
 	"container/list"
 	"crypto/md5"
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"github.com/taosdata/Bailongma/blm_prometheus/pkg/log"
 	"io/ioutil"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/taosdata/Bailongma/blm_prometheus/pkg/log"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
@@ -48,7 +48,7 @@ func NewProcessor() *WriterProcessor {
 
 func (p *WriterProcessor) Process(req *prompb.WriteRequest) error {
 
-	url := DbUser+":"+DbPassword+"@/http("+DaemonIP+")/"+DbName
+	url := DbUser + ":" + DbPassword + "@/http(" + DaemonIP + ")/" + DbName
 
 	db, err := sql.Open(DriverName, url)
 	if err != nil {
@@ -88,6 +88,35 @@ func (p *WriterProcessor) Check(r *http.Request) (string, error) {
 	res := queryTableStruct(string(compressed))
 	output = output + "\nTable structure:\n" + res
 	return output, nil
+}
+
+type tbInfo struct {
+	field  string
+	types  string
+	length int
+	note   string
+}
+
+func getTbInfo(db *sql.DB, tableName string) ([]tbInfo, error) {
+	s := fmt.Sprintf("describe %s.%s", DbName, tableName)
+
+	rows, err := db.Query(s)
+	if nil != err {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	data := make([]tbInfo, 0)
+	for ;rows.Next(); {
+		var tb tbInfo
+		err2 := rows.Scan(&tb.field, &tb.types, &tb.length, &tb.note)
+		if nil != err2 {
+			return nil, err2
+		}
+	}
+
+	return data, nil
 }
 
 func HandleStable(ts *prompb.TimeSeries, db *sql.DB) error {
@@ -151,19 +180,15 @@ func HandleStable(ts *prompb.TimeSeries, db *sql.DB) error {
 	if !ok { // no local record of super table structure
 		nt.tagList = tbTagList
 		nt.tagMap = tbTagMap
-		stbDescription := queryTableStruct(sTableName) //query the super table from TDengine
-		var stbSt map[string]interface{}
-		err := json.Unmarshal([]byte(stbDescription), &stbSt)
+
+		data, err := getTbInfo(db, sTableName)
 		if err == nil { //query tdengine table success!
-			status := stbSt["status"].(string)
-			if status == "succ" { //yes, the super table was already created in TDengine
 				taosTagList := list.New()
 				taosTagMap := make(map[string]string)
-				dt := stbSt["data"]
-				for _, fd := range dt.([]interface{}) {
-					fdc := fd.([]interface{})
-					if fdc[3].(string) == "tag" && fdc[0].(string) != "taghash" {
-						tmpStr := fdc[0].(string)
+				for _, fd := range data {
+					
+					if fd.note == "TAG" && fd.field != "taghash" {
+						tmpStr := fd.field
 						taosTagList.PushBack(tmpStr[2:])
 						taosTagMap[tmpStr[2:]] = "y"
 					}
@@ -203,8 +228,9 @@ func HandleStable(ts *prompb.TimeSeries, db *sql.DB) error {
 					}
 				}
 				IsSTableCreated.Store(sTableName, nt)
-			} else { // no, the super table haven't been created in TDengine, create it.
-				var sqlcmd string
+		} else { //query TDengine table error
+			log.ErrorLogger.Println(err)
+			var sqlcmd string
 				sqlcmd = "create table if not exists " + sTableName + " (ts timestamp, value double) tags(taghash binary(34)"
 				for e := tbTagList.Front(); e != nil; e = e.Next() {
 					sqlcmd = sqlcmd + ",t_" + e.Value.(string) + TagStr
@@ -217,9 +243,6 @@ func HandleStable(ts *prompb.TimeSeries, db *sql.DB) error {
 				} else {
 					log.ErrorLogger.Println(err)
 				}
-			}
-		} else { //query TDengine table error
-			log.ErrorLogger.Println(err)
 		}
 	} else {
 		nTag := schema.(nameTag)

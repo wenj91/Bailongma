@@ -329,7 +329,10 @@ func processBatches(workerId int) {
 		}
 	}
 	defer db.Close()
-	db.Exec("use prometheus")
+	_, err = db.Exec("use prometheus")
+	if err != nil {
+		logger.ErrorLogger.Printf("use error %s\n", err)
+	}
 
 	sqlcmd := make([]string, write.BatchSize+1)
 	i = 0
