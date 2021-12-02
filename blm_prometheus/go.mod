@@ -12,4 +12,4 @@ require (
 	github.com/wenj91/taos-driver v0.0.0-20211201124835-4f21bf7a15cd
 )
 
-// replace github.com/wenj91/taos-driver => ../../taos-driver
+replace github.com/wenj91/taos-driver => ../../taos-driver

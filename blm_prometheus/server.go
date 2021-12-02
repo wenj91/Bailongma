@@ -139,6 +139,8 @@ func init() {
 
 func main() {
 
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+
 	for i := 0; i < write.HttpWorkers; i++ {
 		nodeChannels = append(nodeChannels, make(chan prompb.WriteRequest, write.BufferSize))
 	}

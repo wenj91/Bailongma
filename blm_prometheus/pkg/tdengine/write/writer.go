@@ -108,12 +108,14 @@ func getTbInfo(db *sql.DB, tableName string) ([]tbInfo, error) {
 	defer rows.Close()
 
 	data := make([]tbInfo, 0)
-	for ;rows.Next(); {
+	for rows.Next() {
 		var tb tbInfo
 		err2 := rows.Scan(&tb.field, &tb.types, &tb.length, &tb.note)
 		if nil != err2 {
 			return nil, err2
 		}
+
+		data = append(data, tb)
 	}
 
 	return data, nil
@@ -183,66 +185,66 @@ func HandleStable(ts *prompb.TimeSeries, db *sql.DB) error {
 
 		data, err := getTbInfo(db, sTableName)
 		if err == nil { //query tdengine table success!
-				taosTagList := list.New()
-				taosTagMap := make(map[string]string)
-				for _, fd := range data {
-					
-					if fd.note == "TAG" && fd.field != "taghash" {
-						tmpStr := fd.field
-						taosTagList.PushBack(tmpStr[2:])
-						taosTagMap[tmpStr[2:]] = "y"
-					}
+			taosTagList := list.New()
+			taosTagMap := make(map[string]string)
+			for _, fd := range data {
+
+				if fd.note == "TAG" && fd.field != "taghash" {
+					tmpStr := fd.field
+					taosTagList.PushBack(tmpStr[2:])
+					taosTagMap[tmpStr[2:]] = "y"
 				}
-				nt.tagList = taosTagList
-				nt.tagMap = taosTagMap
-				tbTagList = nt.tagList
-				tbTagMap = nt.tagMap
-				var sqlcmd string
-				i := 0
-				for _, l := range ts.Labels {
-					k := strings.ToLower(string(l.Name))
-					if k == model.MetricNameLabel {
-						continue
-					}
-					i++
-					if i < TagNumLimit {
-						_, ok := tbTagMap[k]
-						if !ok {
-							sqlcmd = "alter table " + sTableName + " add tag t_" + k + TagStr + "\n"
-							_, err := execSql(sqlcmd, db)
-							if err != nil {
-								errorCode := fmt.Sprintf("%s", err)
-								if strings.Contains(errorCode, "duplicated column names") {
-									tbTagList.PushBack(k)
-									//OrderInsertS(k, tbTagList)
-									tbTagMap[k] = "y"
-								} else {
-									log.ErrorLogger.Println(err)
-								}
-							} else {
+			}
+			nt.tagList = taosTagList
+			nt.tagMap = taosTagMap
+			tbTagList = nt.tagList
+			tbTagMap = nt.tagMap
+			var sqlcmd string
+			i := 0
+			for _, l := range ts.Labels {
+				k := strings.ToLower(string(l.Name))
+				if k == model.MetricNameLabel {
+					continue
+				}
+				i++
+				if i < TagNumLimit {
+					_, ok := tbTagMap[k]
+					if !ok {
+						sqlcmd = "alter table " + sTableName + " add tag t_" + k + TagStr + "\n"
+						_, err := execSql(sqlcmd, db)
+						if err != nil {
+							errorCode := fmt.Sprintf("%s", err)
+							if strings.Contains(errorCode, "duplicated column names") {
 								tbTagList.PushBack(k)
 								//OrderInsertS(k, tbTagList)
 								tbTagMap[k] = "y"
+							} else {
+								log.ErrorLogger.Println(err)
 							}
+						} else {
+							tbTagList.PushBack(k)
+							//OrderInsertS(k, tbTagList)
+							tbTagMap[k] = "y"
 						}
 					}
 				}
-				IsSTableCreated.Store(sTableName, nt)
+			}
+			IsSTableCreated.Store(sTableName, nt)
 		} else { //query TDengine table error
 			log.ErrorLogger.Println(err)
 			var sqlcmd string
-				sqlcmd = "create table if not exists " + sTableName + " (ts timestamp, value double) tags(taghash binary(34)"
-				for e := tbTagList.Front(); e != nil; e = e.Next() {
-					sqlcmd = sqlcmd + ",t_" + e.Value.(string) + TagStr
-				}
+			sqlcmd = "create table if not exists " + sTableName + " (ts timestamp, value double) tags(taghash binary(34)"
+			for e := tbTagList.Front(); e != nil; e = e.Next() {
+				sqlcmd = sqlcmd + ",t_" + e.Value.(string) + TagStr
+			}
 
-				sqlcmd = sqlcmd + ")\n"
-				_, err := execSql(sqlcmd, db)
-				if err == nil {
-					IsSTableCreated.Store(sTableName, nt)
-				} else {
-					log.ErrorLogger.Println(err)
-				}
+			sqlcmd = sqlcmd + ")\n"
+			_, err := execSql(sqlcmd, db)
+			if err == nil {
+				IsSTableCreated.Store(sTableName, nt)
+			} else {
+				log.ErrorLogger.Println(err)
+			}
 		}
 	} else {
 		nTag := schema.(nameTag)
