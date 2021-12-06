@@ -182,7 +182,7 @@ func buildClients() (reader, writer) {
 
 func writeHandle() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusAccepted)
+		
 		addr := strings.Split(r.RemoteAddr, ":")
 		idx := TAOSHashID([]byte(addr[0]))
 
@@ -203,6 +203,8 @@ func writeHandle() http.Handler {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		
+		w.WriteHeader(http.StatusAccepted)
 		nodeChannels[idx%write.HttpWorkers] <- req
 	})
 }
