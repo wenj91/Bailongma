@@ -388,11 +388,11 @@ func queryTableStruct(tbname string) string {
 		log.ErrorLogger.Println(err)
 		fmt.Println(err)
 		return ""
-	} else {
-		compressed, _ := ioutil.ReadAll(resp.Body)
-		defer resp.Body.Close()
-		return string(compressed)
-	}
+	} 
+	
+	compressed, _ := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	return string(compressed)
 }
 
 func execSql(sqlcmd string, db *sql.DB) (sql.Result, error) {
@@ -452,9 +452,9 @@ func TaosStrCmp(a string, b string) bool {
 	}
 	if len(a) > len(b) {
 		return false
-	} else {
-		return true
-	}
+	} 
+	
+	return true
 }
 
 func OrderInsertS(s string, l *list.List) {
@@ -475,5 +475,4 @@ func OrderInsertS(s string, l *list.List) {
 		}
 	}
 	l.PushBack(s)
-	return
 }
