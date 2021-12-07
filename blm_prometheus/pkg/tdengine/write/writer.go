@@ -25,12 +25,45 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/taosdata/Bailongma/blm_prometheus/pkg/log"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
+)
+
+// main vars
+var (
+	BatchChannels   []chan string //multi table one chan
+	BufPool         sync.Pool
+	WorkersGroup    sync.WaitGroup
+	IsSTableCreated sync.Map
+	IsTableCreated  sync.Map
+	TdUrl           string
+	TagStr          string
+	HttpWorkers     int
+	SqlWorkers      int
+)
+
+// write vars
+var (
+	DaemonIP      string
+	DaemonName    string
+	BatchSize     int
+	BufferSize    int
+	DbName        string
+	DbUser        string
+	DbPassword    string
+	RWPort        string
+	ApiPort       string
+	DebugPrt      int
+	TagLen        int
+	TagLimit      int = 1024
+	TagNumLimit   int
+	TablePervNode int
+	DriverName    string
 )
 
 type WriterProcessor struct {
